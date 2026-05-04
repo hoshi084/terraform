@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<title>TP — Docker & Terraform : Architecture Microservices</title>
+<style>
+  @page { size: A4; margin: 2cm 2.2cm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 10.5pt; line-height: 1.65; color: #111; background: white; }
+
+  /* COVER */
+  .cover {
+    page-break-after: always;
+    min-height: 26cm;
+    background: #0f172a;
+    color: white;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    text-align: center;
+    padding: 3cm 2.5cm;
+    margin: -2cm -2.2cm 0;
+  }
+  .cover .mono { font-family: 'Courier New', monospace; font-size: 0.85rem; color: #64748b; margin-bottom: 1.5rem; letter-spacing: 2px; text-transform: uppercase; }
+  .cover h1 { font-size: 2.2rem; font-weight: 900; line-height: 1.15; margin-bottom: 0.5rem; }
+  .cover h2 { font-size: 1.1rem; font-weight: 400; color: #94a3b8; margin-bottom: 2.5rem; }
+  .cover .pills { display: flex; gap: 0.7rem; flex-wrap: wrap; justify-content: center; margin-bottom: 2.5rem; }
+  .cover .pill { background: #1e293b; border: 1px solid #334155; padding: 0.35rem 0.9rem; border-radius: 20px; font-size: 0.8rem; color: #cbd5e1; }
+  .cover .pill.accent { background: #1d4ed8; border-color: #2563eb; color: white; }
+  .cover .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem 3rem; text-align: left; background: #1e293b; border: 1px solid #334155; padding: 1.5rem 2rem; border-radius: 10px; font-size: 0.88rem; }
+  .cover .info-grid dt { color: #f97316; font-weight: 700; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.1rem; }
+  .cover .info-grid dd { color: #e2e8f0; }
+  .cover .note { margin-top: 2rem; color: #94a3b8; font-size: 0.8rem; }
+  .cover .note code { background: #1e293b; padding: 0.1rem 0.4rem; border-radius: 3px; font-family: 'Courier New', monospace; color: #f97316; }
+
+  /* LAYOUT */
+  .page-break { page-break-before: always; }
+  h1.part { font-size: 1.4rem; color: #0f172a; border-bottom: 3px solid #1d4ed8; padding-bottom: 0.4rem; margin: 2rem 0 1.2rem; }
+  h2.exo-title { font-size: 1.05rem; color: #0f172a; margin: 1.8rem 0 0.7rem; }
+  p { margin-bottom: 0.55rem; }
+  strong { color: #0f172a; }
+
+  /* EXERCISE BLOCK */
+  .exo {
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    margin: 1.2rem 0;
+    page-break-inside: avoid;
+    overflow: hidden;
+  }
+  .exo-head {
+    background: #f8fafc;
+    border-bottom: 1.5px solid #e2e8f0;
+    padding: 0.65rem 1rem;
+    display: flex; align-items: center; gap: 0.8rem;
+  }
+  .exo-num {
+    background: #0f172a; color: white;
+    font-weight: 700; font-size: 0.78rem;
+    padding: 0.2rem 0.55rem; border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    white-space: nowrap;
+  }
+  .exo-name { font-weight: 700; font-size: 0.98rem; }
+  .exo-body { padding: 0.9rem 1.1rem; }
+  .exo-body p:last-child { margin-bottom: 0; }
+
+  /* TASK LIST */
+  ol.tasks { padding-left: 1.4rem; margin: 0.5rem 0; }
+  ol.tasks li { padding: 0.3rem 0 0.3rem 0.3rem; border-bottom: 1px solid #f5f5f5; }
+  ol.tasks li:last-child { border-bottom: none; }
+  ol.tasks li::marker { color: #1d4ed8; font-weight: 700; }
+  ol.tasks ol { margin-top: 0.3rem; padding-left: 1.2rem; list-style-type: lower-alpha; }
+  ol.tasks ol li::marker { color: #64748b; }
+
+  /* CODE */
+  code { font-family: 'Courier New', monospace; background: #f1f5f9; padding: 0.1rem 0.4rem; border-radius: 3px; font-size: 0.85em; color: #1d4ed8; }
+  pre { font-family: 'Courier New', monospace; background: #0f172a; color: #e2e8f0; padding: 0.9rem 1rem; border-radius: 6px; font-size: 0.8rem; line-height: 1.7; margin: 0.7rem 0; overflow: hidden; white-space: pre-wrap; }
+  pre .c { color: #64748b; }
+  pre .k { color: #f97316; }
+  pre .s { color: #86efac; }
+  pre .v { color: #93c5fd; }
+
+  /* BLOCKS */
+  .warn { background: #fefce8; border-left: 3px solid #eab308; padding: 0.6rem 1rem; margin: 0.7rem 0; font-size: 0.9rem; border-radius: 0 4px 4px 0; }
+  .info { background: #eff6ff; border-left: 3px solid #3b82f6; padding: 0.6rem 1rem; margin: 0.7rem 0; font-size: 0.9rem; border-radius: 0 4px 4px 0; }
+  .schema { background: #0f172a; color: #e2e8f0; font-family: 'Courier New', monospace; font-size: 0.78rem; line-height: 1.9; padding: 1rem 1.2rem; border-radius: 6px; margin: 0.8rem 0; white-space: pre; }
+
+  /* ANSWER */
+  .answer { border: 1px dashed #cbd5e1; border-radius: 5px; min-height: 3.5cm; margin: 0.7rem 0; background: #fafafa; position: relative; }
+  .answer::after { content: "réponse"; position: absolute; bottom: 0.4rem; right: 0.5rem; font-size: 0.65rem; color: #cbd5e1; text-transform: uppercase; letter-spacing: 1px; }
+  .answer.tall { min-height: 6cm; }
+
+  /* TABLE */
+  table.barem { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin: 1rem 0; }
+  table.barem th { background: #0f172a; color: white; padding: 0.5rem 0.8rem; text-align: left; }
+  table.barem td { padding: 0.45rem 0.8rem; border-bottom: 1px solid #e2e8f0; }
+  table.barem tr:nth-child(even) td { background: #f8fafc; }
+
+  /* COURS */
+  table.cmd { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 0.7rem 0; }
+  table.cmd th { background: #1e293b; color: #f8fafc; padding: 0.45rem 0.8rem; text-align: left; font-weight: 700; }
+  table.cmd td { padding: 0.45rem 0.8rem; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+  table.cmd td:first-child { font-family: 'Courier New', monospace; font-size: 0.8rem; color: #1d4ed8; background: #f8fafc; white-space: nowrap; width: 42%; }
+  table.cmd tr:last-child td { border-bottom: none; }
+
+  .concept { border: 1.5px solid #e2e8f0; border-radius: 8px; margin: 0.9rem 0; overflow: hidden; page-break-inside: avoid; }
+  .concept-head { background: #1e293b; color: #f8fafc; padding: 0.5rem 1rem; font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; gap: 0.6rem; }
+  .concept-head .tag { background: #f97316; color: white; font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: 3px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .concept-body { padding: 0.8rem 1rem; font-size: 0.9rem; }
+  .concept-body p { margin-bottom: 0.45rem; }
+  .concept-body p:last-child { margin-bottom: 0; }
+  .concept-body ul { padding-left: 1.2rem; margin: 0.3rem 0; }
+  .concept-body ul li { padding: 0.2rem 0; }
+  .concept-body ul li::marker { color: #f97316; }
+
+  .cours-section { margin: 1.5rem 0 0.6rem; font-size: 1rem; font-weight: 700; color: #0f172a; border-left: 3px solid #f97316; padding-left: 0.7rem; }
+
+  .footer { font-size: 0.78rem; color: #94a3b8; text-align: center; margin-top: 1.5rem; padding-top: 0.7rem; border-top: 1px solid #e2e8f0; }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover">
+  <p class="mono">Infrastructure as Code — TP</p>
+  <h1>Docker &amp; Terraform</h1>
+  <h2>Architecture Microservices — Déploiement local</h2>
+  <div class="pills">
+    <span class="pill accent">Docker</span>
+    <span class="pill accent">Terraform</span>
+    <span class="pill">Provider kreuzwerker/docker</span>
+    <span class="pill">State</span>
+    <span class="pill">Modules</span>
+    <span class="pill">Variables</span>
+    <span class="pill">Locals</span>
+    <span class="pill">for_each</span>
+  </div>
+  <dl class="info-grid">
+    <div><dt>Modalité</dt><dd>Binômes — rendu Git</dd></div>
+    <div><dt>Durée</dt><dd>6 h (3 séances)</dd></div>
+    <div><dt>Prérequis</dt><dd>Docker Desktop installé, CLI Terraform ≥ 1.6</dd></div>
+    <div><dt>Rendu attendu</dt><dd>Dépôt Git + démo fonctionnelle</dd></div>
+  </dl>
+  <p class="note">Aucun compte cloud requis. Toute l'infrastructure tourne localement via Docker.<br>Commande de nettoyage à la fin de chaque séance : <code>terraform destroy</code></p>
+</div>
+
+<!-- ARCHITECTURE -->
+<h1 class="part">Contexte &amp; Architecture cible</h1>
+
+<p>Le projet <strong>ShopMicro</strong> est une application e-commerce décomposée en quatre services indépendants. Votre objectif est de déployer et gérer cette architecture localement en utilisant <strong>Terraform avec le provider Docker</strong>, sans toucher à Docker Compose une fois la Partie 1 terminée.</p>
+
+<div class="schema">        ┌─────────────────────────────────────────────┐
+        │         Machine hôte (localhost)             │
+        │                                              │
+        │  :8080        :3001    :3002    :3003         │
+        │    │            │        │        │           │
+        └────┼────────────┼────────┼────────┼───────────┘
+             │            │        │        │
+     ┌───────▼──┐  ┌──────▼─┐ ┌───▼────┐ ┌─▼────────┐
+     │ frontend │  │  user  │ │product │ │  order   │
+     │  :80     │  │ :3001  │ │  :3002 │ │  :3003   │
+     └──────────┘  └────┬───┘ └───┬────┘ └────┬─────┘
+                        │         │            │
+                        └────┬────┘            │
+                             │    ◄────────────┘
+                    ┌────────▼────────┐
+                    │   PostgreSQL    │
+                    │    :5432        │
+                    └─────────────────┘
+          (tous sur le même réseau Docker bridge)</div>
+
+<p>Les fichiers sources Node.js, les Dockerfiles et les fichiers Terraform de base sont fournis. <strong>Lisez-les entièrement avant de commencer.</strong></p>
+
+<!-- ============================= PARTIE 1 ============================= -->
+<div class="page-break"></div>
+<h1 class="part">Partie 1 — Docker : maîtrise de l'existant</h1>
+
+<div class="exo">
+  <div class="exo-head"><span class="exo-num">01</span><span class="exo-name">Lecture du code source</span></div>
+  <div class="exo-body">
+    <p>Avant toute chose, lisez les trois fichiers <code>src/index.js</code>.</p>
+    <ol class="tasks">
+      <li>Dressez le tableau exhaustif de toutes les routes HTTP exposées par chaque service (méthode, chemin, comportement attendu).</li>
+      <li>Le <code>order-service</code> appelle les deux autres services. Identifiez exactement quels appels sont faits, dans quel ordre, et ce qui se passe si l'un d'eux échoue avec un statut 404.</li>
+      <li>Chaque service a deux modes de fonctionnement selon la présence ou non de <code>DATABASE_URL</code>. Expliquez la différence de comportement et pourquoi ce pattern est utile pendant le développement.</li>
+    </ol>
+    <div class="answer tall"></div>
+  </div>
+</div>
+
+<div class="exo">
+  <div class="exo-head"><span class="exo-num">02</span><span class="exo-name">Docker Compose — démarrage et vérification</span></div>
+  <div class="exo-body">
+    <ol class="tasks">
+      <li>Démarrez l'application avec <code>docker compose up --build -d</code>. Vérifiez que les cinq conteneurs sont actifs.</li>
+      <li>Sans utiliser le navigateur, créez un utilisateur, un produit, puis une commande via <code>curl</code>. Écrivez les commandes utilisées.</li>
+      <li>Tentez de créer une commande avec un <code>user_id</code> inexistant. Quel code HTTP obtenez-vous et pourquoi ?</li>
+      <li>Stoppez uniquement le conteneur <code>user-service</code>. Que se passe-t-il si vous tentez de créer une commande ? Relancez le service et expliquez pourquoi <code>restart: unless-stopped</code> ne suffit pas dans ce cas.</li>
+    </ol>
+    <div class="answer tall"></div>
+  </div>
+</div>
+
+<div class="exo">
+  <div class="exo-head"><span class="exo-num">03</span><span class="exo-name">Analyse des Dockerfiles et optimisation</span></div>
+  <div class="exo-body">
+    <ol class="tasks">
+      <li>Examinez les trois Dockerfiles. Quelle est la différence entre <code>npm install</code> et <code>npm ci</code> ? Pourquoi l'un est-il préféré dans un contexte d'image de production ?</li>
+      <li>Lancez <code>docker images | grep shopmicrfo</code> (après build via Docker Compose). Notez les tailles. Proposez et implémentez une modification des Dockerfiles qui réduit la taille des images. Mesurez l'impact.</li>
+      <li>Ajoutez un fichier <code>.dockerignore</code> dans chaque dossier de service. Quels fichiers doit-il exclure et pourquoi ?</li>
+      <li>La directive <code>HEALTHCHECK</code> est présente dans les Dockerfiles. Quelle est la différence entre l'état <code>healthy</code>, <code>unhealthy</code> et <code>starting</code> d'un conteneur ? Comment le vérifier ?</li>
+    </ol>
+    <div class="answer tall"></div>
+  </div>
+</div>
+
+<div class="exo">
+  <div class="exo-head"><span class="exo-num">04</span><span class="exo-name">Réseaux Docker</span></div>
+  <div class="exo-body">
+    <ol class="tasks">
+      <li>Identifiez le réseau Docker créé par Docker Compose pour ce projet. Quel driver est utilisé ? Quel sous-réseau est assigné ?</li>
+      <li>Exécutez un shell dans le conteneur <code>order-service</code>. Pouvez-vous pinguer le conteneur <code>postgres</code> par son nom ? Par son IP ? Expliquez le mécanisme DNS interne de Docker.</li>
+      <li>Dans <code>docker-compose.yml</code>, les services n'ont pas de configuration <code>networks</code> explicite. Comment Docker Compose détermine-t-il le réseau à créer ?</li>
+      <li>Créez manuellement un réseau Docker <code>monitoring_net</code>. Ajoutez dans le <code>docker-compose.yml</code> un service <strong>Adminer</strong> (interface web PostgreSQL) sur le port <code>8081</code>, connecté à la fois au réseau de l'application et à <code>monitoring_net</code>.</li>
+    </ol>
+  </div>
+</div>
+
+<!-- ============================= PARTIE 2 ============================= -->
+<div class="page-break"></div>
+<h1 class="part">Partie 2 — Terraform : prise en main du provider Docker</h1>
+
+<div class="exo">
+  <div class="exo-head"><span class="exo-num">05</span><span class="exo-name">Initialisation et exploration</span></div>
+  <div class="exo-body">
+    <p>Stoppez Docker Compose (<code>docker compose down -v</code>). Désormais, vous n'utiliserez plus Docker Compose — Terraform prend le relais.</p>
+    <ol class="tasks">
+      <li>Dans le dossier <code>terraform/</code>, listez et décrivez brièvement le rôle de chaque fichier <code>.tf</code>.</li>
+      <li>Lancez <code>terraform init</code>. Que télécharge cette commande ? Où les fichiers sont-ils placés ?</li>
+      <li>Lancez <code>terraform validate</code>. Corrigez les erreurs éventuelles.</li>
+      <li>Lancez <code>terraform plan</code>. Relevez : combien de ressources vont être créées ? Quels sont les types de ressources distincts ? Y a-t-il des ressources qui dépendent d'autres ? Comment le distinguer dans la sortie du plan ?</li>
+    </ol>
+    <div class="answer"></div>
+  </div>
+</div>
+
+<div class="exo">
+  <div class="exo-head"><span class="exo-num">06</span><span class="exo-name">Premier apply et vérification</span></div>
+  <div class="exo-body">
+    <ol class="tasks">
+      <li>Lancez <code>terraform apply</code>. Pendant l'exécution, observez dans un autre terminal avec <code>docker ps -a</code> l'ordre d'apparition des conteneurs. Correspond-il à ce que vous attendiez des dépendances ?</li>
+      <li>Une fois l'apply terminé, récupérez les outputs avec <code>terraform output</code>. Vérifiez que l'application est fonctionnelle via les URLs affichées.</li>
+      <li>Ouvrez le fichier <code>terraform.tfstate</code>. Identifiez la structure JSON : que représente un bloc <code>resource</code> dans le state ? Quelle information cruciale y trouve-t-on par rapport au code source ?</li>
+      <li>Lancez <code>terraform plan</code> une seconde fois sans rien changer. Que constatez-vous ? Expliquez pourquoi.</li>
+    </ol>
+    <div class="answer"></div>
+  </div>
+</div>
+
+<div class="exo">
+  <div class="exo-head"><span class="exo-num">07</span><span class="exo-name">Variables, locals et expressions</span></div>
+  <div class="exo-body">
+    <ol class="tasks">
+      <li>Dans <code>variables.tf</code>, la variable <code>db_password</code> est marquée <code>sensitive = true</code>. Modifiez sa valeur via la ligne de commande (<code>-var</code>) et observez la différence dans le plan. Que cache Terraform exactement ?</li>
+      <li>Ajoutez une variable <code>restart_policy</code> de type <code>string</code> avec une contrainte de validation n'acceptant que les valeurs <code>"always"</code>, <code>"unless-stopped"</code> et <code>"on-failure"</code>. Utilisez-la dans tous les conteneurs de <code>services.tf</code>.</li>
+      <li>Dans <code>locals.tf</code>, la variable <code>db_url</code> est construite dynamiquement. Expliquez pourquoi une référence à <code>docker_container.postgres.name</code> crée une dépendance implicite. Vérifiez-le dans le graphe de dépendances (<code>terraform graph</code>).</li>
+      <li>Ajoutez un local <code>all_service_ports</code> qui construit une map associant le nom de chaque service à son port hôte. Utilisez-le dans un output <code>services_ports</code>.</li>
+    </ol>
+    <div class="answer tall"></div>
+  </div>
+</div>
+
+<div class="exo">
+  <div class="exo-head"><span class="exo-num">08</span><span class="exo-name">Dépendances implicites et explicites</span></div>
+  <div class="exo-body">
+    <ol class="tasks">
+      <li>Dans <code>services.tf</code>, l'<code>order-service</code> a un <code>depends_on</code> explicite sur postgres. Est-il réellement nécessaire ? Justifiez en traçant le chemin de dépendances implicites existantes.</li>
+      <li>Supprimez le bloc <code>depends_on</code> de <code>order-service</code>. Lancez <code>terraform plan</code> puis <code>terraform graph</code>. Le comportement change-t-il ?</li>
+      <li>Créez un scénario où un <code>depends_on</code> explicite est <strong>indispensable</strong> — c'est-à-dire où aucune référence directe ne crée la dépendance nécessaire. Décrivez ce scénario.</li>
+    </ol>
+    <div class="answer"></div>
+  </div>
+</div>
+
+<!-- ============================= PARTIE 3 ============================= -->
+<div class="page-break"></div>
+<h1 class="part">Partie 3 — State Terraform</h1>
+
+<div class="exo">
+  <div class="exo-head"><span class="exo-num">09</span><span class="exo-name">Inspection et manipulation du state</span></div>
+  <div class="exo-body">
+    <ol class="tasks">
+      <li>Listez toutes les ressources du state avec <code>terraform state list</code>. Pour chaque type de ressource (<code>docker_image</code>, <code>docker_container</code>, etc.), expliquez ce que Terraform trace dans le state.</li>
+      <li>Affichez le state complet du conteneur postgres : <code>terraform state show docker_container.postgres</code>. Relevez trois attributs présents dans le state qui ne sont définis nulle part dans le code <code>.tf</code>. D'où viennent-ils ?</li>
+      <li><strong>Scénario de dérive :</strong> Stoppez et supprimez manuellement le conteneur <code>user_service</code> avec <code>docker rm -f ...</code>. Lancez ensuite <code>terraform plan</code>. Que constate Terraform ? Quelle action va-t-il prendre et pourquoi ?</li>
+      <li>Lancez <code>terraform apply</code> pour corriger la dérive. Vérifiez que le conteneur est recréé.</li>
+    </ol>
+    <div class="answer"></div>
+  </div>
+</div>
+
+<div class="exo">
+  <div class="exo-head"><span class="exo-num">10</span><span class="exo-name">terraform import</span></div>
+  <div class="exo-body">
+    <ol class="tasks">
+      <li>Créez manuellement un conteneur Docker nommé <code>shopmicrfo_adminer</code> à partir de l'image <code>adminer:latest</code>, exposé sur le port <code>8081</code> et connecté au réseau <code>shopmicrfo_network</code>.</li>
+      <li>Écrivez dans un nouveau fichier <code>adminer.tf</code> la ressource Terraform correspondant à ce conteneur.</li>
+      <li>Importez le conteneur dans le state Terraform avec <code>terraform import</code>. Consultez la documentation du provider pour trouver l'identifiant à utiliser.</li>
+      <li>Lancez <code>terraform plan</code>. Y a-t-il des différences entre l'état importé et votre code ? Corrigez-les jusqu'à obtenir un plan vide.</li>
+    </ol>
+    <div class="answer"></div>
+  </div>
+</div>
+
+<div class="exo">
+  <div class="exo-head"><span class="exo-num">11</span><span class="exo-name">Cycle de vie et terraform taint</span></div>
+  <div class="exo-body">
+    <ol class="tasks">
+      <li>Dans le module <code>microservice</code>, un bloc <code>lifecycle { ignore_changes = [image] }</code> est présent. Simulez le cas où l'image du <code>user-service</code> est mise à jour (modifiez le code, rebuildez). Que se passe-t-il lors du <code>terraform plan</code> avec ce bloc ? Sans ce bloc ?</li>
+      <li>Utilisez <code>terraform taint docker_container.user_service</code> (ou son équivalent moderne). Que fait cette commande ? Vérifiez avec <code>terraform plan</code>.</li>
+      <li>Ajoutez un bloc <code>lifecycle { create_before_destroy = true }</code> sur le conteneur postgres. Quel impact cela a-t-il sur la procédure de remplacement du conteneur ? Pourquoi est-ce utile pour un service avec état (stateful) ?</li>
+    </ol>
+    <div class="answer"></div>
+  </div>
+</div>
+
+<!-- ============================= PARTIE 4 ============================= -->
+<div class="page-break"></div>
+<h1 class="part">Partie 4 — count, for_each et expressions avancées</h1>
+
+<div class="exo">
+  <div class="exo-head"><span class="exo-num">12</span><span class="exo-name">count vs for_each</span></div>
+  <div class="exo-body">
+    <ol class="tasks">
+      <li>Actuellement, chaque conteneur de service est une ressource distincte dans <code>services.tf</code>. Réécrivez les trois conteneurs de microservices (user, product, order) en utilisant <strong>une seule ressource</strong> <code>docker_container</code> avec <code>for_each</code> itérant sur le local <code>services</code> défini dans <code>locals.tf</code>.</li>
+      <li>Quelle est la différence dans le state entre une ressource créée avec <code>count = 3</code> et une ressource créée avec <code>for_each</code> sur un map de 3 éléments ? Illustrez avec les adresses de ressources Terraform.</li>
+      <li>Vous retirez un service du map <code>for_each</code>. Que se passe-t-il ? Même question avec <code>count</code> si vous retirez un élément au milieu de la liste.</li>
+      <li>La variable d'environnement <code>DATABASE_URL</code> est commune à tous les services, mais <code>USER_SERVICE_URL</code> et <code>PRODUCT_SERVICE_URL</code> sont spécifiques à l'order-service. Comment gérez-vous cette différence dans votre ressource <code>for_each</code> ?</li>
+    </ol>
+    <div class="answer tall"></div>
+  </div>
+</div>
+
+<div class="exo">
+  <div class="exo-head"><span class="exo-num">13</span><span class="exo-name">Expressions : fonctions et conditions</span></div>
+  <div class="exo-body">
+    <ol class="tasks">
+      <li>Ajoutez une variable booléenne <code>expose_postgres</code> (défaut : <code>true</code>). Utilisez une expression conditionnelle dans le bloc <code>ports</code> du conteneur postgres pour n'exposer le port <code>5432</code> sur l'hôte que si cette variable est <code>true</code>. Vérifiez les deux cas avec <code>terraform plan</code>.</li>
+      <li>Dans <code>images.tf</code>, le hash de déclenchement de rebuild est construit avec <code>sha256(join(...))</code>. Expliquez le rôle de ce mécanisme. Que se passe-t-il si vous modifiez <code>src/index.js</code> du user-service et relancez <code>terraform apply</code> ?</li>
+      <li>Utilisez la fonction <code>toset()</code> pour créer un volume Docker par service (user, product, order) en une seule ressource <code>docker_volume</code> avec <code>for_each</code>. Ces volumes resteront vides pour l'instant.</li>
+    </ol>
+    <div class="answer tall"></div>
+  </div>
+</div>
+
+<!-- ============================= PARTIE 5 ============================= -->
+<div class="page-break"></div>
+<h1 class="part">Partie 5 — Modules</h1>
+
+<div class="exo">
+  <div class="exo-head"><span class="exo-num">14</span><span class="exo-name">Analyse du module microservice existant</span></div>
+  <div class="exo-body">
+    <ol class="tasks">
+      <li>Examinez les trois fichiers du module <code>modules/microservice/</code>. Listez tous ses inputs et outputs. Que ne peut-il pas gérer que la définition directe dans <code>services.tf</code> gère ?</li>
+      <li>Réécrivez <strong>un seul service</strong> (au choix) dans <code>services.tf</code> pour qu'il utilise ce module au lieu d'une ressource directe. Vérifiez avec <code>terraform plan</code> que le résultat est un remplacement (ou idéalement aucune modification si les attributs sont identiques).</li>
+      <li>Le module contient un <code>lifecycle { ignore_changes = [image] }</code>. Quand cette règle est-elle problématique ? Proposez une solution pour permettre de forcer le remplacement de l'image depuis l'appelant du module sans modifier le module lui-même.</li>
+    </ol>
+    <div class="answer"></div>
+  </div>
+</div>
+
+<div class="exo">
+  <div class="exo-head"><span class="exo-num">15</span><span class="exo-name">Créer un module complet</span></div>
+  <div class="exo-body">
+    <p>Créez un module <code>modules/service-stack/</code> qui regroupe : le build de l'image Docker, la création du conteneur, et un volume optionnel pour ce service.</p>
+    <ol class="tasks">
+      <li>Définissez les inputs : <code>name</code>, <code>build_context</code>, <code>dockerfile_path</code>, <code>internal_port</code>, <code>external_port</code>, <code>network_name</code>, <code>env_vars</code>, <code>project_name</code>, <code>enable_volume</code> (booléen, défaut <code>false</code>).</li>
+      <li>Le volume ne doit être créé que si <code>enable_volume = true</code>. Utilisez <code>count</code> pour ce comportement conditionnel.</li>
+      <li>Exposez en output : <code>container_name</code>, <code>container_id</code>, <code>image_id</code>, <code>volume_name</code> (null si pas de volume).</li>
+      <li>Remplacez les ressources du <code>user-service</code> dans le code principal par un appel à ce module. Vérifiez que le plan ne crée aucune ressource supplémentaire.</li>
+    </ol>
+    <div class="answer tall"></div>
+  </div>
+</div>
+
+<!-- ============================= PARTIE 6 ============================= -->
+<div class="page-break"></div>
+<h1 class="part">Partie 6 — Mise à jour, destroy et cas avancés</h1>
+
+<div class="exo">
+  <div class="exo-head"><span class="exo-num">16</span><span class="exo-name">Mise à jour d'un service sans interruption</span></div>
+  <div class="exo-body">
+    <ol class="tasks">
+      <li>Modifiez le <code>user-service</code> : ajoutez un champ <code>role</code> (défaut : <code>"user"</code>) dans la route <code>POST /users</code> et renvoyez-le dans les réponses <code>GET</code>. Vérifiez localement que la modification fonctionne.</li>
+      <li>Mettez à jour le tag de l'image en changeant <code>services_image_tag</code> à <code>"v2"</code> dans <code>terraform.tfvars</code>. Lancez <code>terraform plan</code> : quelles ressources sont affectées ? Pourquoi plus que juste le conteneur ?</li>
+      <li>Avec le <code>lifecycle { ignore_changes = [image] }</code> actif dans le module, expliquez pourquoi le conteneur <strong>ne sera pas recréé</strong> même si l'image change. Comment forcer la recréation ?</li>
+      <li>Après l'apply, vérifiez que la nouvelle version du service répond correctement. Utilisez <code>docker inspect</code> pour confirmer quelle image est utilisée par le conteneur.</li>
+    </ol>
+    <div class="answer"></div>
+  </div>
+</div>
+
+<div class="exo">
+  <div class="exo-head"><span class="exo-num">17</span><span class="exo-name">Gestion de la destruction et des données persistantes</span></div>
+  <div class="exo-body">
+    <ol class="tasks">
+      <li>Insérez quelques utilisateurs et produits dans l'application. Lancez <code>terraform destroy</code>. Que devient le volume <code>postgres_data</code> ? Les données sont-elles perdues ?</li>
+      <li>Relancez <code>terraform apply</code>. Les données sont-elles restaurées ? Expliquez en fonction du comportement du provider Docker sur les volumes.</li>
+      <li>Ajoutez un bloc <code>lifecycle { prevent_destroy = true }</code> sur la ressource <code>docker_volume.postgres_data</code>. Testez <code>terraform destroy</code>. Que se passe-t-il ? Comment contourner cette protection quand c'est vraiment nécessaire ?</li>
+      <li>Supprimez <strong>uniquement</strong> les conteneurs sans toucher au volume ni aux images. Écrivez la ou les commandes <code>terraform</code> permettant de cibler des ressources spécifiques.</li>
+    </ol>
+    <div class="answer"></div>
+  </div>
+</div>
+
+<div class="exo">
+  <div class="exo-head"><span class="exo-num">18</span><span class="exo-name">Provisioners et scripts d'initialisation</span></div>
+  <div class="exo-body">
+    <ol class="tasks">
+      <li>Consultez la documentation Terraform sur les <strong>provisioners</strong>. Quelle est la philosophie officielle de Terraform à leur égard ?</li>
+      <li>Ajoutez un provisioner <code>local-exec</code> sur le conteneur postgres qui attend que la base soit prête avant de continuer (utilisez <code>docker exec ... pg_isready</code>). Ce provisioner doit s'exécuter à la <strong>création</strong> uniquement.</li>
+      <li>Testez le comportement : détruisez le conteneur postgres et relancez <code>terraform apply</code>. Le provisioner est-il exécuté lors de la recréation ?</li>
+      <li>Pourquoi les provisioners sont-ils considérés comme un "last resort" en Terraform ? Proposez une alternative pour l'initialisation de schéma de base de données.</li>
+    </ol>
+    <div class="answer"></div>
+  </div>
+</div>
+
+<!-- ============================= POINT DE COURS ============================= -->
+<div class="page-break"></div>
+<h1 class="part">Aide-mémoire — Commandes &amp; Concepts</h1>
+
+<!-- ---- DOCKER ---- -->
+<p class="cours-section">Docker — commandes essentielles</p>
+
+<table class="cmd">
+  <thead><tr><th>Commande</th><th>Ce qu'elle fait</th></tr></thead>
+  <tbody>
+    <tr><td>docker compose up --build -d</td><td>Build les images depuis les Dockerfiles puis démarre tous les services définis en arrière-plan (<code>-d</code> = detached).</td></tr>
+    <tr><td>docker compose down</td><td>Stoppe et supprime les conteneurs. Les volumes nommés sont conservés.</td></tr>
+    <tr><td>docker compose down -v</td><td>Idem + supprime aussi les volumes. Les données persistantes sont perdues.</td></tr>
+    <tr><td>docker compose logs -f &lt;service&gt;</td><td>Affiche et suit en temps réel les logs d'un service spécifique.</td></tr>
+    <tr><td>docker compose ps</td><td>Liste l'état de chaque service (Running, Exited, healthy…).</td></tr>
+    <tr><td>docker ps -a</td><td>Liste tous les conteneurs Docker actifs et stoppés sur la machine.</td></tr>
+    <tr><td>docker exec -it &lt;nom&gt; sh</td><td>Ouvre un shell interactif à l'intérieur d'un conteneur actif.</td></tr>
+    <tr><td>docker inspect &lt;nom&gt;</td><td>Affiche la configuration complète d'un conteneur (réseau, volumes, variables d'env…).</td></tr>
+    <tr><td>docker network ls</td><td>Liste tous les réseaux Docker existants.</td></tr>
+    <tr><td>docker network inspect &lt;nom&gt;</td><td>Affiche les détails d'un réseau : sous-réseau, conteneurs connectés, gateway.</td></tr>
+    <tr><td>docker images</td><td>Liste toutes les images locales avec leur taille.</td></tr>
+    <tr><td>docker rmi &lt;image&gt;</td><td>Supprime une image locale.</td></tr>
+  </tbody>
+</table>
+
+<!-- ---- TERRAFORM CYCLE ---- -->
+<p class="cours-section">Terraform — cycle de vie</p>
+
+<table class="cmd">
+  <thead><tr><th>Commande</th><th>Ce qu'elle fait</th></tr></thead>
+  <tbody>
+    <tr><td>terraform init</td><td>Initialise le répertoire de travail : télécharge le provider déclaré dans <code>required_providers</code> dans <code>.terraform/</code> et crée le fichier de verrou <code>.terraform.lock.hcl</code>.</td></tr>
+    <tr><td>terraform validate</td><td>Vérifie la syntaxe et la cohérence des fichiers <code>.tf</code> sans contacter Docker ni lire le state.</td></tr>
+    <tr><td>terraform fmt</td><td>Reformate automatiquement le code selon le style officiel Terraform. À lancer avant chaque commit.</td></tr>
+    <tr><td>terraform fmt --check</td><td>Vérifie le formatage sans modifier les fichiers. Retourne un code d'erreur si le code n'est pas formaté.</td></tr>
+    <tr><td>terraform plan</td><td>Compare le state actuel avec le code et affiche les actions prévues (création, modification, destruction) sans rien exécuter. <strong>À toujours faire avant apply.</strong></td></tr>
+    <tr><td>terraform plan -out=plan.tfplan</td><td>Sauvegarde le plan dans un fichier pour un apply garanti identique.</td></tr>
+    <tr><td>terraform apply</td><td>Exécute les actions planifiées. Demande une confirmation interactive sauf avec <code>-auto-approve</code>.</td></tr>
+    <tr><td>terraform apply plan.tfplan</td><td>Applique exactement le plan sauvegardé, sans confirmation.</td></tr>
+    <tr><td>terraform destroy</td><td>Détruit toutes les ressources gérées par le state courant. Demande confirmation.</td></tr>
+    <tr><td>terraform destroy -target=&lt;res&gt;</td><td>Détruit uniquement la ressource ciblée (ex : <code>docker_container.postgres</code>).</td></tr>
+  </tbody>
+</table>
+
+<!-- ---- TERRAFORM STATE ---- -->
+<p class="cours-section">Terraform — inspection du state</p>
+
+<table class="cmd">
+  <thead><tr><th>Commande</th><th>Ce qu'elle fait</th></tr></thead>
+  <tbody>
+    <tr><td>terraform state list</td><td>Liste toutes les ressources actuellement trackées dans le state (format <code>type.nom</code>).</td></tr>
+    <tr><td>terraform state show &lt;res&gt;</td><td>Affiche tous les attributs connus d'une ressource dans le state : ID, IP, configuration réelle.</td></tr>
+    <tr><td>terraform output</td><td>Affiche les valeurs des outputs déclarés dans <code>outputs.tf</code> après un apply.</td></tr>
+    <tr><td>terraform output -json</td><td>Même chose au format JSON, utile pour scripting.</td></tr>
+    <tr><td>terraform graph</td><td>Génère le graphe de dépendances en format DOT (visualisable sur <code>dreampuf.github.io/GraphvizOnline</code>).</td></tr>
+    <tr><td>terraform import &lt;res&gt; &lt;id&gt;</td><td>Importe une ressource existante (créée hors Terraform) dans le state sans la recréer.</td></tr>
+    <tr><td>terraform taint &lt;res&gt;</td><td>Marque une ressource comme à recréer lors du prochain apply, même si aucune modification n'est détectée.</td></tr>
+    <tr><td>terraform refresh</td><td>Met à jour le state en relisant l'état réel des ressources. Utilisé pour détecter une dérive.</td></tr>
+  </tbody>
+</table>
+
+<div class="page-break"></div>
+
+<!-- ---- CONCEPTS CLES ---- -->
+<p class="cours-section">Concepts clés</p>
+
+<div class="concept">
+  <div class="concept-head"><span class="tag">State</span> Le fichier terraform.tfstate</div>
+  <div class="concept-body">
+    <p>Terraform stocke l'état réel de l'infrastructure dans un fichier JSON appelé <strong>state</strong>. Il contient les IDs, IPs et attributs de chaque ressource après création. C'est la source de vérité de Terraform : lors d'un <code>plan</code>, Terraform compare le code avec le state pour savoir ce qui a changé.</p>
+    <p><strong>Ne jamais modifier le state à la main.</strong> Utiliser <code>terraform state mv</code>, <code>terraform state rm</code> ou <code>terraform import</code> selon le besoin.</p>
+    <p>En équipe, le state doit être partagé via un <strong>backend distant</strong> (HTTP, S3, Terraform Cloud…) pour que tous les membres voient le même état. Un mécanisme de verrou empêche deux personnes d'appliquer simultanément.</p>
+  </div>
+</div>
+
+<div class="concept">
+  <div class="concept-head"><span class="tag">Dérive</span> Drift — quand la réalité s'écarte du code</div>
+  <div class="concept-body">
+    <p>Une <strong>dérive</strong> se produit quand une ressource est modifiée ou supprimée manuellement hors de Terraform (via l'interface Docker, la console cloud…). Au prochain <code>terraform plan</code>, Terraform détecte la différence entre le state et la réalité et propose de la corriger.</p>
+    <p>Exemple : si on supprime un conteneur avec <code>docker rm</code>, Terraform le recréera au prochain <code>apply</code> pour revenir à l'état désiré.</p>
+  </div>
+</div>
+
+<div class="concept">
+  <div class="concept-head"><span class="tag">Dépendances</span> Implicites vs explicites</div>
+  <div class="concept-body">
+    <p><strong>Implicite :</strong> Quand une ressource A référence un attribut d'une ressource B (<code>docker_network.app.name</code>), Terraform infère automatiquement que B doit être créée avant A. C'est la forme la plus courante et recommandée.</p>
+    <p><strong>Explicite :</strong> Le bloc <code>depends_on = [resource.B]</code> force un ordre quand il n'y a aucune référence directe. À utiliser seulement quand nécessaire, car il rend le graphe plus difficile à lire.</p>
+  </div>
+</div>
+
+<div class="concept">
+  <div class="concept-head"><span class="tag">count / for_each</span> Créer plusieurs ressources similaires</div>
+  <div class="concept-body">
+    <p><strong><code>count = N</code></strong> — crée N instances identiques d'une ressource, accessibles via <code>resource.name[0]</code>, <code>[1]</code>… Fragile : si on retire un élément au milieu de la liste, Terraform recréera toutes les ressources suivantes.</p>
+    <p><strong><code>for_each = map</code></strong> — crée une instance par entrée d'un map ou d'un set. Chaque instance est adressée par sa clé (<code>resource.name["clé"]</code>). Stable : retirer une entrée ne touche que la ressource correspondante.</p>
+    <p><strong>Règle :</strong> Toujours préférer <code>for_each</code> sur des maps nommés dès que possible.</p>
+  </div>
+</div>
+
+<div class="concept">
+  <div class="concept-head"><span class="tag">lifecycle</span> Contrôler le comportement lors des mises à jour</div>
+  <div class="concept-body">
+    <ul>
+      <li><strong><code>ignore_changes = [attr]</code></strong> — Terraform ignore les différences sur cet attribut. Utile quand Docker ou un autre outil modifie un attribut hors du contrôle de Terraform (ex : gateway assignée automatiquement).</li>
+      <li><strong><code>prevent_destroy = true</code></strong> — Terraform refuse de détruire cette ressource, même lors d'un <code>terraform destroy</code>. Protection contre les suppressions accidentelles (volumes de données, bases de production).</li>
+      <li><strong><code>create_before_destroy = true</code></strong> — Terraform crée le remplaçant avant de détruire l'ancien. Utile pour les services avec état où une interruption serait problématique.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="concept">
+  <div class="concept-head"><span class="tag">Modules</span> Encapsuler et réutiliser</div>
+  <div class="concept-body">
+    <p>Un module est un dossier de fichiers <code>.tf</code> exposant des <strong>variables</strong> (inputs) et des <strong>outputs</strong>. Il s'appelle depuis un autre fichier avec <code>module "nom" { source = "./chemin" }</code>.</p>
+    <p>Un module bien conçu est autonome, documenté (descriptions des variables), et ne contient pas de valeurs en dur. Il doit pouvoir être instancié plusieurs fois avec des paramètres différents.</p>
+    <p>Le Terraform Registry (<code>registry.terraform.io</code>) propose des modules communautaires maintenus pour les fournisseurs courants (AWS, Docker, Kubernetes…).</p>
+  </div>
+</div>
+
+<div class="concept">
+  <div class="concept-head"><span class="tag">Variables</span> Types, valeurs par défaut, validation</div>
+  <div class="concept-body">
+    <p>Les variables Terraform sont déclarées dans <code>variables.tf</code>. Leur valeur peut être passée par :</p>
+    <ul>
+      <li>Fichier <code>terraform.tfvars</code> (chargé automatiquement)</li>
+      <li>Flag <code>-var="nom=valeur"</code> sur la ligne de commande</li>
+      <li>Variable d'environnement <code>TF_VAR_nom</code></li>
+      <li>Valeur par défaut dans la déclaration (<code>default = ...</code>)</li>
+    </ul>
+    <p>Le bloc <code>validation</code> permet de rejeter des valeurs invalides avec un message d'erreur explicite, avant même que Terraform contacte l'infrastructure.</p>
+    <p>Les variables <code>sensitive = true</code> ne sont jamais affichées dans les logs de plan/apply.</p>
+  </div>
+</div>
+
+<div class="concept">
+  <div class="concept-head"><span class="tag">Locals</span> Valeurs calculées réutilisables</div>
+  <div class="concept-body">
+    <p>Les <strong>locals</strong> (déclarés dans un bloc <code>locals { }</code>) permettent de nommer des expressions complexes pour les réutiliser sans répétition. Contrairement aux variables, ils ne sont pas exposés à l'extérieur du module et ne peuvent pas être surchargés depuis la ligne de commande.</p>
+    <p>Exemple typique : construire une URL de connexion à partir de plusieurs variables (<code>host</code>, <code>port</code>, <code>user</code>), puis référencer ce local dans plusieurs ressources.</p>
+  </div>
+</div>
+
+<!-- ============================= EXERCICE BONUS ============================= -->
+<div class="page-break"></div>
+<h1 class="part">Partie 7 — Exercice intégrateur</h1>
+
+<p>Cet exercice mobilise l'ensemble des compétences du TP. Aucune indication sur la démarche n'est fournie : à vous de concevoir la solution et d'organiser votre code.</p>
+
+<div class="exo">
+  <div class="exo-head"><span class="exo-num">19</span><span class="exo-name">Nouveau microservice : notification-service</span></div>
+  <div class="exo-body">
+    <p>Vous devez ajouter un cinquième microservice au projet : le <strong>notification-service</strong>. Ce service écoute sur le port <code>3004</code> et expose les routes suivantes :</p>
+    <ul style="padding-left:1.3rem;margin:0.5rem 0 0.8rem;">
+      <li style="padding:0.2rem 0;"><code>GET /health</code> — renvoie <code>&#123;"status":"ok","service":"notification-service"&#125;</code></li>
+      <li style="padding:0.2rem 0;"><code>POST /notify</code> — reçoit un body <code>&#123;"user_id": N, "message": "..." &#125;</code>, vérifie que l'utilisateur existe via le <code>user-service</code>, stocke la notification en base de données (table <code>notifications</code> : <code>id</code>, <code>user_id</code>, <code>message</code>, <code>sent_at</code>), et retourne la notification créée.</li>
+      <li style="padding:0.2rem 0;"><code>GET /notifications</code> — retourne la liste de toutes les notifications.</li>
+      <li style="padding:0.2rem 0;"><code>GET /notifications/:user_id</code> — retourne les notifications d'un utilisateur donné.</li>
+    </ul>
+    <ol class="tasks">
+      <li><strong>Application :</strong> Créez le dossier <code>services/notification-service/</code> avec son <code>src/index.js</code>, son <code>package.json</code>, son <code>Dockerfile</code> et son <code>package-lock.json</code>. Le service doit fonctionner en mode mémoire (sans <code>DATABASE_URL</code>) et en mode PostgreSQL.</li>
+      <li><strong>Docker Compose :</strong> Ajoutez le service dans <code>docker-compose.yml</code> avec les dépendances correctes. Vérifiez avec <code>docker compose up --build</code> que les cinq services démarrent et que les health checks passent.</li>
+      <li><strong>Terraform :</strong> Ajoutez dans le dossier <code>terraform/</code> toutes les ressources nécessaires pour ce service en utilisant le module <code>modules/microservice</code>. Pensez à : l'image Docker, le conteneur, la variable de port, l'output. Vérifiez que <code>terraform plan</code> affiche exactement 2 nouvelles ressources (image + conteneur) et que <code>terraform apply</code> démarre le service correctement.</li>
+      <li><strong>Test de bout en bout :</strong> Via <code>curl</code>, créez un utilisateur, envoyez deux notifications à cet utilisateur, puis récupérez uniquement ses notifications. Montrez les commandes et réponses.</li>
+      <li><strong>Dérive volontaire :</strong> Après l'apply, renommez manuellement le conteneur <code>notification-service</code> en modifiant son label avec <code>docker rename</code>. Lancez <code>terraform plan</code>. Que se passe-t-il ? Pourquoi Terraform ne détecte-t-il pas le changement de nom ? Quelle commande permet de forcer la resynchronisation ?</li>
+      <li><strong>Refactoring :</strong> Le code de création de table PostgreSQL est dupliqué dans tous les services (appel à <code>pool.query(CREATE TABLE IF NOT EXISTS ...)</code> dans <code>initDb()</code>). Proposez une architecture alternative pour centraliser la gestion du schéma de base de données. Vous n'avez pas à l'implémenter, mais décrivez la solution et ses avantages.</li>
+    </ol>
+    <div class="answer tall"></div>
+  </div>
+</div>
+
+<div class="exo">
+  <div class="exo-head"><span class="exo-num">20</span><span class="exo-name">Analyse de sécurité du code Terraform</span></div>
+  <div class="exo-body">
+    <p>Relisez l'ensemble du code Terraform produit pendant le TP et répondez aux questions suivantes.</p>
+    <ol class="tasks">
+      <li>Le mot de passe PostgreSQL est déclaré comme variable <code>sensitive = true</code> et stocké dans <code>terraform.tfvars</code>. Ouvrez le fichier <code>terraform.tfstate</code> après un apply. Le mot de passe y est-il présent ? En clair ou chiffré ? Quelle conclusion en tirez-vous sur la protection du state ?</li>
+      <li>Le conteneur PostgreSQL expose le port <code>5432</code> sur l'hôte (<code>external = 5432</code>). Depuis un autre processus sur la machine hôte, est-il possible de se connecter à cette base sans passer par les conteneurs applicatifs ? Quel risque cela représente-t-il ? Comment le corriger dans Terraform ?</li>
+      <li>Dans <code>images.tf</code>, le trigger de rebuild est calculé avec <code>sha256(join(...))</code> sur trois fichiers. Quel fichier important lié aux dépendances Node.js n'est pas inclus dans ce calcul ? Quelles conséquences cela peut-il avoir ? Corrigez le trigger.</li>
+      <li>La variable <code>db_password</code> a la valeur par défaut <code>"shoppassword"</code> dans <code>terraform.tfvars</code>. Proposez un mécanisme Terraform permettant d'obliger l'opérateur à fournir explicitement un mot de passe en production, sans valeur par défaut possible.</li>
+    </ol>
+    <div class="answer tall"></div>
+  </div>
+</div>
+
+<!-- ============================= SYNTHESE ============================= -->
+<div class="page-break"></div>
+<h1 class="part">Synthèse &amp; Évaluation</h1>
+
+<table class="barem">
+  <thead>
+    <tr><th>Partie</th><th>Thème</th><th>Exercices</th><th>Points</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>1</td><td>Docker — maîtrise de l'existant</td><td>01 → 04</td><td>4</td></tr>
+    <tr><td>2</td><td>Terraform — prise en main provider Docker</td><td>05 → 08</td><td>5</td></tr>
+    <tr><td>3</td><td>State Terraform</td><td>09 → 11</td><td>5</td></tr>
+    <tr><td>4</td><td>count, for_each, expressions</td><td>12 → 13</td><td>4</td></tr>
+    <tr><td>5</td><td>Modules</td><td>14 → 15</td><td>5</td></tr>
+    <tr><td>6</td><td>Mise à jour, destroy, provisioners</td><td>16 → 18</td><td>4</td></tr>
+    <tr><td>7</td><td>Exercice intégrateur — nouveau service + sécurité</td><td>19 → 20</td><td>6</td></tr>
+    <tr><td colspan="3"><strong>Qualité du code (lisibilité, nommage, fmt)</strong></td><td><strong>3</strong></td></tr>
+    <tr><td colspan="3"><strong>Total</strong></td><td><strong>36</strong></td></tr>
+  </tbody>
+</table>
+
+<h2 style="margin:1.5rem 0 0.7rem;font-size:1rem;">Critères de rendu</h2>
+<ol class="tasks">
+  <li>Dépôt Git avec un historique de commits significatif (un commit par exercice ou groupe logique).</li>
+  <li>Le code passe <code>terraform validate</code> et <code>terraform fmt --check</code> sans erreur.</li>
+  <li><code>terraform plan</code> produit un plan vide (no changes) sur une infra déjà déployée.</li>
+  <li>L'application est fonctionnelle : création d'utilisateur, produit et commande via le frontend ou curl.</li>
+  <li>Aucun mot de passe en clair dans l'historique Git.</li>
+</ol>
+
+<div class="warn" style="margin-top:1.2rem;">
+  <strong>Ressources autorisées :</strong> Documentation officielle Terraform (<code>registry.terraform.io</code>), documentation du provider <code>kreuzwerker/docker</code>, documentation Docker. Le code doit être compris et rédigé par le binôme.
+</div>
+
+<div class="footer">TP Docker &amp; Terraform — Architecture Microservices</div>
+
+</body>
+</html>

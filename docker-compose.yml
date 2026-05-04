@@ -1,0 +1,78 @@
+# =============================================================================
+# Docker Compose — Développement local
+# Usage : docker compose up --build
+# =============================================================================
+
+services:
+
+  # Base de données partagée (en prod, chaque service aurait sa propre BDD)
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: shopuser
+      POSTGRES_PASSWORD: shoppassword
+      POSTGRES_DB: shopdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shopuser -d shopdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  user-service:
+    build: ./services/user-service
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      DATABASE_URL: postgresql://shopuser:shoppassword@postgres:5432/shopdb
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  product-service:
+    build: ./services/product-service
+    ports:
+      - "3002:3002"
+    environment:
+      PORT: 3002
+      DATABASE_URL: postgresql://shopuser:shoppassword@postgres:5432/shopdb
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  order-service:
+    build: ./services/order-service
+    ports:
+      - "3003:3003"
+    environment:
+      PORT: 3003
+      DATABASE_URL: postgresql://shopuser:shoppassword@postgres:5432/shopdb
+      USER_SERVICE_URL: http://user-service:3001
+      PRODUCT_SERVICE_URL: http://product-service:3002
+    depends_on:
+      postgres:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+      product-service:
+        condition: service_started
+    restart: unless-stopped
+
+  frontend:
+    build: ./services/frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - user-service
+      - product-service
+      - order-service
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
