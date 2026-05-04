@@ -7,7 +7,7 @@ resource "docker_container" "user_service" {
   name  = "${var.project_name}_user_service"
   image = docker_image.user_service.image_id
 
-  restart = "unless-stopped"
+  restart = var.restart_policy
 
   env = [
     "PORT=3001",
@@ -40,7 +40,7 @@ resource "docker_container" "product_service" {
   name  = "${var.project_name}_product_service"
   image = docker_image.product_service.image_id
 
-  restart = "unless-stopped"
+  restart = var.restart_policy
 
   env = [
     "PORT=3002",
@@ -73,7 +73,7 @@ resource "docker_container" "order_service" {
   name  = "${var.project_name}_order_service"
   image = docker_image.order_service.image_id
 
-  restart = "unless-stopped"
+  restart = var.restart_policy
 
   env = [
     "PORT=3003",
@@ -93,7 +93,6 @@ resource "docker_container" "order_service" {
   }
 
   depends_on = [
-    docker_container.postgres,
     docker_container.user_service,
     docker_container.product_service,
   ]
@@ -113,7 +112,7 @@ resource "docker_container" "frontend" {
   name  = "${var.project_name}_frontend"
   image = docker_image.frontend.image_id
 
-  restart = "unless-stopped"
+  restart = var.restart_policy
 
   ports {
     internal = 80

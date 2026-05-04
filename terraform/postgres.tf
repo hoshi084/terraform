@@ -6,7 +6,7 @@ resource "docker_container" "postgres" {
   name  = "${var.project_name}_postgres"
   image = docker_image.postgres.image_id
 
-  restart = "unless-stopped"
+  restart = var.restart_policy
 
   env = [
     "POSTGRES_USER=${var.db_user}",

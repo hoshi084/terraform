@@ -67,6 +67,17 @@ variable "db_password" {
   default     = "shoppassword"
 }
 
+variable "restart_policy" {
+  description = "Politique de redémarrage des conteneurs"
+  type        = string
+  default     = "unless-stopped"
+
+  validation {
+    condition     = contains(["always", "unless-stopped", "on-failure"], var.restart_policy)
+    error_message = "La politique de redémarrage doit être 'always', 'unless-stopped' ou 'on-failure'."
+  }
+}
+
 # --- Images Docker ---
 
 variable "postgres_image_tag" {

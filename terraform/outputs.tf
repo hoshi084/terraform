@@ -32,13 +32,7 @@ output "postgres_container_name" {
   value       = docker_container.postgres.name
 }
 
-output "container_ids" {
-  description = "IDs de tous les conteneurs gérés par Terraform"
-  value = {
-    postgres        = docker_container.postgres.id
-    user_service    = docker_container.user_service.id
-    product_service = docker_container.product_service.id
-    order_service   = docker_container.order_service.id
-    frontend        = docker_container.frontend.id
-  }
+output "services_ports" {
+  description = "Map des ports hôtes pour tous les services"
+  value       = local.all_service_ports
 }

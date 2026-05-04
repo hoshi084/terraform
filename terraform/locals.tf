@@ -19,4 +19,13 @@ locals {
     product = { port = 3002, host_port = var.product_service_port }
     order   = { port = 3003, host_port = var.order_service_port }
   }
+
+  # Map associant le nom de chaque service à son port hôte
+  all_service_ports = {
+    user_service    = var.user_service_port
+    product_service = var.product_service_port
+    order_service   = var.order_service_port
+    postgres        = var.postgres_port
+    frontend        = var.frontend_port
+  }
 }
