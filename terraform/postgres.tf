@@ -43,4 +43,8 @@ resource "docker_container" "postgres" {
     label = "project"
     value = var.project_name
   }
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
