@@ -9,10 +9,12 @@ module "user_service_stack" {
 
   name          = "user_service"
   build_context = "${path.root}/../services/user-service"
+  dockerfile_path = "Dockerfile"
   internal_port = 3001
   external_port = var.user_service_port
   network_name  = docker_network.app.name
   project_name  = var.project_name
+  image_tag     = var.services_image_tag
   enable_volume = true
 
   env_vars = [

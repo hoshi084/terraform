@@ -1,4 +1,4 @@
-variable "name" {
+﻿variable "name" {
   description = "Nom du service (utilisé pour le conteneur et l'image)"
   type        = string
 }
@@ -38,6 +38,12 @@ variable "env_vars" {
 variable "project_name" {
   description = "Nom du projet pour les labels"
   type        = string
+}
+
+variable "image_tag" {
+  description = "Tag appliqué à l'image construite pour ce service"
+  type        = string
+  default     = "latest"
 }
 
 variable "enable_volume" {

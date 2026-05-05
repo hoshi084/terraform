@@ -20,8 +20,8 @@ if (useDatabase) {
 
 // --- Fallback in-memory pour le dev local sans BDD ---
 let memUsers = [
-  { id: 1, name: 'Alice Dupont', email: 'alice@example.com', created_at: new Date() },
-  { id: 2, name: 'Bob Martin', email: 'bob@example.com', created_at: new Date() },
+  { id: 1, name: 'Alice Dupont', email: 'alice@example.com', role: 'user', created_at: new Date() },
+  { id: 2, name: 'Bob Martin', email: 'bob@example.com', role: 'user', created_at: new Date() },
 ];
 let nextId = 3;
 
@@ -33,10 +33,14 @@ async function initDb() {
       id SERIAL PRIMARY KEY,
       name VARCHAR(255) NOT NULL,
       email VARCHAR(255) UNIQUE NOT NULL,
+      role VARCHAR(255) NOT NULL DEFAULT 'user',
       created_at TIMESTAMP DEFAULT NOW()
     )
   `);
-  console.log('Table users créée');
+  await pool.query(`
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(255) NOT NULL DEFAULT 'user'
+  `);
+  console.log('Table users créée ou mise à jour');
 }
 
 // --- Routes ---
@@ -74,17 +78,17 @@ app.get('/users/:id', async (req, res) => {
 });
 
 app.post('/users', async (req, res) => {
-  const { name, email } = req.body;
+  const { name, email, role = 'user' } = req.body;
   if (!name || !email) return res.status(400).json({ error: 'name et email requis' });
   try {
     if (useDatabase) {
       const { rows } = await pool.query(
-        'INSERT INTO users (name, email) VALUES ($1, $2) RETURNING *',
-        [name, email]
+        'INSERT INTO users (name, email, role) VALUES ($1, $2, $3) RETURNING *',
+        [name, email, role]
       );
       return res.status(201).json(rows[0]);
     }
-    const user = { id: nextId++, name, email, created_at: new Date() };
+    const user = { id: nextId++, name, email, role, created_at: new Date() };
     memUsers.push(user);
     res.status(201).json(user);
   } catch (err) {

@@ -1,6 +1,6 @@
 # Build de l'image Docker
 resource "docker_image" "this" {
-  name = "${var.project_name}_${var.name}"
+  name = "${var.project_name}_${var.name}:${var.image_tag}"
 
   build {
     context    = var.build_context
