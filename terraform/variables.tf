@@ -78,6 +78,12 @@ variable "restart_policy" {
   }
 }
 
+variable "expose_postgres" {
+  description = "Exposer le port PostgreSQL 5432 sur l'hôte"
+  type        = bool
+  default     = true
+}
+
 # --- Images Docker ---
 
 variable "postgres_image_tag" {

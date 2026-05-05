@@ -7,6 +7,9 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+// Simulation d'une mise à jour du code
+console.log('User service v2.0 - Updated!');
+
 // Connexion PostgreSQL — en local on utilise un fallback en mémoire
 const useDatabase = process.env.DATABASE_URL !== undefined;
 

@@ -12,3 +12,20 @@ resource "docker_volume" "postgres_data" {
     value = var.project_name
   }
 }
+
+# Volumes pour les services (actuellement vides, pour extension future)
+resource "docker_volume" "service_volumes" {
+  for_each = local.services
+
+  name = "${var.project_name}_${each.key}_data"
+
+  labels {
+    label = "project"
+    value = var.project_name
+  }
+
+  labels {
+    label = "service"
+    value = each.key
+  }
+}

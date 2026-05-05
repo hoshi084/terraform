@@ -14,10 +14,13 @@ resource "docker_container" "postgres" {
     "POSTGRES_DB=${var.db_name}",
   ]
 
-  # Port PostgreSQL exposé sur l'hôte pour inspection directe
-  ports {
-    internal = 5432
-    external = var.postgres_port
+  # Port PostgreSQL exposé sur l'hôte pour inspection directe (conditionnel)
+  dynamic "ports" {
+    for_each = var.expose_postgres ? [1] : []
+    content {
+      internal = 5432
+      external = var.postgres_port
+    }
   }
 
   # Montage du volume de données
