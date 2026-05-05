@@ -15,11 +15,6 @@ locals {
 
   # Noms des services — utilisés pour construire les noms de conteneurs et d'images
   services = {
-    user = {
-      port      = 3001
-      host_port = var.user_service_port
-      image_id  = docker_image.user_service.image_id
-    }
     product = {
       port      = 3002
       host_port = var.product_service_port

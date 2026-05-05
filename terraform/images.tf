@@ -12,23 +12,24 @@ resource "docker_image" "postgres" {
 }
 
 # Build du user-service à partir du Dockerfile local
-resource "docker_image" "user_service" {
-  name = "${var.project_name}/user-service:${var.services_image_tag}"
-
-  build {
-    context    = "${path.root}/../services/user-service"
-    dockerfile = "Dockerfile"
-  }
-
-  # Force le rebuild si le contenu des sources change
-  triggers = {
-    source_hash = sha256(join("", [
-      filesha256("${path.root}/../services/user-service/Dockerfile"),
-      filesha256("${path.root}/../services/user-service/src/index.js"),
-      filesha256("${path.root}/../services/user-service/package.json"),
-    ]))
-  }
-}
+# REMOVED: Maintenant géré par le module service-stack
+# resource "docker_image" "user_service" {
+#   name = "${var.project_name}/user-service:${var.services_image_tag}"
+#
+#   build {
+#     context    = "${path.root}/../services/user-service"
+#     dockerfile = "Dockerfile"
+#   }
+#
+#   # Force le rebuild si le contenu des sources change
+#   triggers = {
+#     source_hash = sha256(join("", [
+#       filesha256("${path.root}/../services/user-service/Dockerfile"),
+#       filesha256("${path.root}/../services/user-service/src/index.js"),
+#       filesha256("${path.root}/../services/user-service/package.json"),
+#     ]))
+#   }
+# }
 
 resource "docker_image" "product_service" {
   name = "${var.project_name}/product-service:${var.services_image_tag}"
